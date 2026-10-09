@@ -1,0 +1,132 @@
+
+<style>
+#erd-wrap svg { width: 100%; }
+.mermaid-label { font-size: 13px; }
+</style>
+<div id="erd-wrap"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#3C3489' : '#EEEDFE',
+    primaryBorderColor: dark ? '#7F77DD' : '#534AB7',
+    primaryTextColor: dark ? '#CECBF6' : '#26215C',
+    secondaryColor: dark ? '#085041' : '#E1F5EE',
+    secondaryBorderColor: dark ? '#1D9E75' : '#0F6E56',
+    secondaryTextColor: dark ? '#9FE1CB' : '#04342C',
+    tertiaryColor: dark ? '#3C3489' : '#E6F1FB',
+    attributeBackgroundColorOdd: dark ? '#1a1a1a' : '#f8f8f8',
+    attributeBackgroundColorEven: dark ? '#242424' : '#ffffff',
+  },
+});
+
+const diagram = `erDiagram
+  MEDECIN {
+    uuid id PK
+    string nom
+    string email
+    string password_hash
+    string specialite
+    string role
+    timestamp created_at
+  }
+  PATIENT {
+    uuid id PK
+    string nom
+    string prenom
+    date date_naissance
+    string sexe
+    string groupe_sanguin
+    text antecedents
+    timestamp created_at
+  }
+  DOSSIER_MEDICAL {
+    uuid id PK
+    uuid patient_id FK
+    uuid medecin_id FK
+    string statut
+    timestamp ouvert_le
+    timestamp mis_a_jour_le
+  }
+  TRAITEMENT {
+    uuid id PK
+    uuid dossier_id FK
+    string medicament
+    string posologie
+    date debut
+    date fin
+    string statut
+  }
+  IMAGE_MEDICALE {
+    uuid id PK
+    uuid dossier_id FK
+    string type
+    string url_stockage
+    string modalite
+    timestamp prise_le
+  }
+  PREDICTION_IA {
+    uuid id PK
+    uuid dossier_id FK
+    string modele
+    string type_prediction
+    float probabilite
+    json resultat
+    timestamp genere_le
+  }
+  AUDIT_LOG {
+    uuid id PK
+    uuid medecin_id FK
+    uuid patient_id FK
+    string action
+    string ressource
+    json metadata
+    timestamp timestamp
+    string ip_address
+  }
+  MEDECIN ||--o{ DOSSIER_MEDICAL : "suit"
+  PATIENT ||--o{ DOSSIER_MEDICAL : "possede"
+  DOSSIER_MEDICAL ||--o{ TRAITEMENT : "contient"
+  DOSSIER_MEDICAL ||--o{ IMAGE_MEDICALE : "contient"
+  DOSSIER_MEDICAL ||--o{ PREDICTION_IA : "genere"
+  MEDECIN ||--o{ AUDIT_LOG : "effectue"
+  PATIENT ||--o{ AUDIT_LOG : "concerne"
+`;
+
+const { svg } = await mermaid.render('erd-svg', diagram);
+document.getElementById('erd-wrap').innerHTML = svg;
+
+document.querySelectorAll('#erd-wrap svg .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+
+document.querySelectorAll('#erd-wrap svg .row-rect-odd path, #erd-wrap svg .row-rect-even path').forEach(p => {
+  p.setAttribute('stroke', 'none');
+});
+</script>
